@@ -17,7 +17,7 @@ class CreatePostsTable extends Migration
             $table->increments('id');
             $table->string('title');
             $table->mediumText('body');
-            $table->integer('author_id');
+            $table->integer('user_id');
             $table->integer('manager_id')->nullable();
             $table->mediumText('manager_answer')->nullable();
             $table->foreign('author_id')->on('users')->referrences('id')->onDelete('cascade')->onUpdate('cascade');

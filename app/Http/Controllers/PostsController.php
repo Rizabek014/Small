@@ -7,6 +7,11 @@ use App\Post;
 
 class PostsController extends Controller
 {
+    
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
     /**
      * Display a listing of the resource.
      *
@@ -15,7 +20,7 @@ class PostsController extends Controller
     public function index()
     {
         //$posts = Post::all()->paginate(1);
-        $posts = Post::orderBy('title', 'asc')->paginate(7);
+        $posts = Post::orderBy('created_at', 'desc')->paginate(7);
         return view('posts.index')->with('posts', $posts);
     }
 
@@ -26,7 +31,7 @@ class PostsController extends Controller
      */
     public function create()
     {
-        //
+        return view('posts.create');
     }
 
     /**
@@ -37,7 +42,18 @@ class PostsController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'title' => 'required',
+            'body' => 'required'
+        ]);
+        
+        $post = new Post;
+        $post->title = $request->input('title');
+        $post->body = $request->input('body');
+        $post->user_id = auth()->user()->id;
+        $post->save();
+
+        return redirect('/posts')->with('success', 'Post Created');
     }
 
     /**
@@ -48,7 +64,7 @@ class PostsController extends Controller
      */
     public function show($id)
     {
-        $post = Post::find($id)->paginate(1);
+        $post = Post::find($id);
         return view('posts.show')->with('post', $post);
     }
 
@@ -60,7 +76,12 @@ class PostsController extends Controller
      */
     public function edit($id)
     {
-        //
+        $post = Post::find($id);
+        if(auth()->user()->id == $post->user_id || auth()->user()->role == 1)
+        {
+            return view('posts.edit')->with('post', $post);
+        }
+        return redirect('/posts')->with('error', 'Unauthorized page');
     }
 
     /**
@@ -72,7 +93,19 @@ class PostsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $this->validate($request, [
+            'title' => 'required',
+            'body' => 'required'
+        ]);
+        
+        $post = Post::find($id);
+        $post->title = $request->input('title');
+        $post->body = $request->input('body');
+        $post->manager_answer = $request->input('answer');
+        $post->manager_id = $request->input('manager_id');
+        $post->save();
+
+        return redirect('/posts')->with('success', 'Post Updated');
     }
 
     /**
@@ -83,6 +116,22 @@ class PostsController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $post = Post::find($id);
+        
+        if(auth()->user()->id !== $post->user_id || auth()->user()->role == 1)
+        {
+            return redirect('/posts')->with('error', 'Unauthorized page');
+        }
+        $post->delete();
+        return redirect('/posts')->with('success', 'Post Deleted');
+    }
+
+    public function getAnswer($id)
+    {
+        $post = Post::find($id);
+        $post->manager_answer = $request->input('answer');
+        $post->save();
+
+        return redirect('/posts');
     }
 }
